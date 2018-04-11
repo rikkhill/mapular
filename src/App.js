@@ -1,19 +1,46 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
+import { geoMercator } from 'd3-geo';
+import { feature } from 'topojson-client';
+import SVGMap from './components/Map';
 import './App.css';
 
 class App extends Component {
+
+  constructor() {
+    super();
+    this.state = {
+      geographies: [],
+      projection: null,
+    };
+  }
+
+  componentDidMount() {
+    fetch('/data/london_ward_topology.json').then((response) => {
+      if (response.status !== 200) {
+        // Something weird happened
+        console.log(`Some error happened: ${response.status}`);
+      }
+
+      response.json().then((data) => {
+
+        const collection = feature(data, data.objects.features);
+
+        this.setState({
+          geographies: collection.features,
+          projection: geoMercator()
+                       .fitExtent([[10, 10], [800, 450]],
+                                feature(data, data.objects.features)),
+        });
+      });
+    });
+  }
+
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
-        </header>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
-      </div>
+      <SVGMap
+        geographies={this.state.geographies}
+        projection={this.state.projection}
+      />
     );
   }
 }
